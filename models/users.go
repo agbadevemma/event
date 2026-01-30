@@ -50,4 +50,5 @@ func (u User) ValidateCredentials() error {
 		return errors.New("Credentials Invalid")
 	}
 
+	return  nil
 }
