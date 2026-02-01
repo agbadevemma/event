@@ -26,6 +26,7 @@ func getEvents(context *gin.Context) {
 }
 
 func getEvent(context *gin.Context) {
+
 	eventId, err := strconv.ParseInt(context.Param("id"), 10, 64)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Could not parse int"})
@@ -42,6 +43,7 @@ func getEvent(context *gin.Context) {
 }
 
 func createEvent(context *gin.Context) {
+
 	var event models.Event
 	err := context.ShouldBindJSON(&event)
 	if err != nil {
@@ -50,8 +52,9 @@ func createEvent(context *gin.Context) {
 		return
 	}
 
-	event.ID = 1
-	event.UserID = 1
+	userId := context.GetInt64("userId")
+	event.ID = userId
+	event.UserID = userId
 	err = event.Save()
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message": "could not create parse"})
@@ -66,15 +69,22 @@ func updateEvent(context *gin.Context) {
 	eventId, err := strconv.ParseInt(context.Param("id"), 10, 64)
 
 	if err != nil {
+		fmt.Print()
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Could not parse int"})
 		return
 	}
 
-	_, err = models.GetEventById(eventId)
+	userId := context.GetInt64("userId")
+	event, err := models.GetEventById(eventId)
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message": "Could not parse int"})
 		return
 	}
+	if event.UserID != userId {
+		context.JSON(http.StatusUnauthorized, gin.H{"message": "Not Authorized to update"})
+		return
+	}
+
 	var updateEvent models.Event
 	err = context.ShouldBindJSON(&updateEvent)
 	if err != nil {
@@ -100,9 +110,21 @@ func deleteEvent(context *gin.Context) {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Could not parse int"})
 		return
 	}
-	var event models.Event
-	event.ID = eventId
-	err = event.DeleteEvent()
+
+	userId := context.GetInt64("userId")
+	event, err := models.GetEventById(eventId)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": "Could not be found"})
+		return
+	}
+	if event.UserID != userId {
+		context.JSON(http.StatusUnauthorized, gin.H{"message": "Not Authorized to delete"})
+		return
+	}
+
+	var deleteEvent models.Event
+	deleteEvent.ID = eventId
+	err = deleteEvent.DeleteEvent()
 	fmt.Println("err", err)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "couldn't delete"})

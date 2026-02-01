@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/emmanuel/rest_project/models"
+	"github.com/emmanuel/rest_project/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -40,9 +41,15 @@ func login(context *gin.Context) {
 		context.JSON(http.StatusUnauthorized, gin.H{"message": "Wrong Credentials."})
 		return
 	}
+	token, err := utils.GenerateToken(user.Email, user.Id)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"message": "Wrong Credentials."})
+		return
+	}
 
 	context.JSON(http.StatusCreated, gin.H{
 		"message": "Login Sucessful!",
+		"token":   token,
 	})
 
 }
